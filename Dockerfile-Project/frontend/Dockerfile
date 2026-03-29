@@ -1,12 +1,29 @@
-# Stage 1: Build the application using Node.js
-FROM node:21-alpine3.17 as build
+# Stage 1: Build the application
+FROM node:20-alpine AS build
+
 WORKDIR /app
-COPY . .
+
+# Copy only package files first (better caching)
+COPY package*.json ./
+
+# Install dependencie
 RUN npm install
+
+# Copy rest of the code
+COPY . .
+
+# Build the app
 RUN npm run build
 
-# Stage 2: Use Nginx to serve the frontend content
-FROM nginx:1.25.3-alpine
+# Stage 2: Serve using Nginx
+FROM nginx:1.25-alpine
+
+# Remove default nginx static files
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy build output
 COPY --from=build /app/build /usr/share/nginx/html
+
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
